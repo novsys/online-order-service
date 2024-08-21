@@ -1,0 +1,277 @@
+<?php
+header("Access-Control-Allow-Origin: *");
+header("Access-Control-Allow-Methods: POST");
+header("Access-Control-Allow-Headers: Content-Type");
+
+
+
+require 'vendor/autoload.php';
+
+use PHPMailer\PHPMailer\PHPMailer;
+use PHPMailer\PHPMailer\Exception;
+
+// Gathered data from form inputs
+$formData = [
+  'name' => isset($_POST['name']) ? $_POST['name'] : '',
+  'lastName' => isset($_POST['lastName']) ? $_POST['lastName'] : '',
+  'company' => isset($_POST['company']) ? $_POST['company'] : '',
+  'number' => isset($_POST['number']) ? $_POST['number'] : '',
+  'email' => isset($_POST['email']) ? $_POST['email'] : '',
+];
+
+$fruchteboxData = [
+  'size' => isset($_POST['size']) ? $_POST['size'] : '',
+  'price' => isset($_POST['price']) ? $_POST['price'] : '',
+];
+
+// $lieferungData = [
+//   'frequency' => isset($_POST['frequency']) ? $_POST['frequency'] : '',
+//   'days' => isset($_POST['days']) ? $_POST['days'] : [],
+// ];
+// // Check if $lieferungData['days'] is an array before using implode
+// $daysString = is_array($lieferungData['days']) ? implode(", ", $lieferungData['days']) : '';
+
+$lieferungData = [
+  'frequency' => isset($_POST['frequency']) ? $_POST['frequency'] : '',
+  'days' => isset($_POST['days']) ? (array)$_POST['days'] : [],
+];
+
+// Check if $lieferungData['days'] is an array before using implode
+$daysString = is_array($lieferungData['days']) ? implode(", ", $lieferungData['days']) : '';
+
+$adresscheckData = [
+  'street' => isset($_POST['street']) ? $_POST['street'] : '',
+  'housenumber' => isset($_POST['housenumber']) ? $_POST['housenumber'] : '',
+  'city' => isset($_POST['city']) ? $_POST['city'] : '',
+  'postcode' => isset($_POST['postcode']) ? $_POST['postcode'] : '',
+];
+
+
+// // Variables to store Fruchtebox input values
+// var fruchteboxData = {
+//   size: "",
+//   price: ""
+// };
+
+// // Variables to store Lieferung input values
+// var lieferungData = {
+//   frequency: "",
+//   days: []
+// };
+
+// // Variables to store Adresscheck input values
+// var adresscheckData = {
+//   street: "",
+//   housenumber: "",
+//   city: "",
+//   postcode: "",
+//   state: ""
+// };
+
+// Gathered data from Fruchtebox, Lieferung, and Adresscheck tabs
+// $fruchteboxSize = isset($_POST['fruchteboxSize']) ? $_POST['fruchteboxSize'] : '';
+// $fruchteboxPrice = isset($_POST['fruchteboxPrice']) ? $_POST['fruchteboxPrice'] : '';
+// $deliveryFrequency = isset($_POST['deliveryFrequency']) ? $_POST['deliveryFrequency'] : '';
+// $deliveryDays = isset($_POST['deliveryDays']) ? $_POST['deliveryDays'] : '';
+// $street = isset($_POST['street']) ? $_POST['street'] : '';
+// $housenumber = isset($_POST['housenumber']) ? $_POST['housenumber'] : '';
+// $city = isset($_POST['city']) ? $_POST['city'] : '';
+// $postcode = isset($_POST['postcode']) ? $_POST['postcode'] : '';
+// $state = isset($_POST['state']) ? $_POST['state'] : '';
+
+// Construct the email message for the user-client
+$toUser = $formData['email'];
+$subjectUser = 'Bestellbestätigung - Ihre Bestellung bei Uns';
+$messageUser = "
+<html>
+<head>
+  <title>Ihre Bestellung bei Uns</title>
+  <style>
+table {
+  border-collapse: collapse;
+  width: 100%;
+}
+
+th, td {
+  padding: 8px;
+  text-align: left;
+  border-bottom: 1px solid #DDD;
+}
+
+tr:hover {background-color: #D6EEEE;}
+</style>
+</head>
+<body>
+  <h2>Sehr geehrte(r) {$formData['name']},</h2>
+  <p>Vielen Dank für Ihre Bestellung bei Uns. Hier sind die Details:</p>
+  
+  <h3>Bestelldaten:</h3>
+  <table>
+        <tr>
+          <th>Angaben</th>
+          <th>Früchtebox</th>
+          <th>Lieferung</th>
+          <th>Adresse</th>
+        </tr>
+        <tr>
+          <td>{$formData['name']} {$formData['lastName']}</td>
+          <td>{$fruchteboxData['size']} Kg</td>
+          <td>{$lieferungData['frequency']}</td>
+          <td>{$adresscheckData['street']} {$adresscheckData['housenumber']}</td>
+        </tr>
+        <tr>
+          <td>{$formData['company']}</td>
+          <td>{$fruchteboxData['price']} CHF</td>
+          <td>{$daysString}</td>
+          <td>{$adresscheckData['city']} {$adresscheckData['postcode']}</td>
+        </tr>
+        <tr>
+          <td>{$formData['number']}</td>
+          <td></td>
+          <td></td>
+          <td></td>
+        </tr>
+        <tr>
+          <td>{$formData['email']}</td>
+          <td></td>
+          <td></td>
+          <td></td>
+        </tr>
+      </table>
+
+
+
+<p>Vielen Dank für Ihr Vertrauen in Uns!</p>
+</body>
+</html>
+";
+
+// Construct the email message for the owner
+$toOwner = '$mail'; // Your email address
+$subjectOwner = '"' . $formData['company'] . '" Neue Bestellung auf Ihrer Website';
+
+$messageOwner = "
+<html>
+<head>
+  <title>Neue Bestellung auf Ihrer Website</title>
+  <style>
+table {
+  border-collapse: collapse;
+  width: 100%;
+}
+
+th, td {
+  padding: 8px;
+  text-align: left;
+  border-bottom: 1px solid #DDD;
+}
+
+tr:hover {background-color: #D6EEEE;}
+</style>
+</head>
+<body>
+  <h2>Neue Bestellung eingegangen:</h2>
+  <p>Hier sind die Details der neuen Bestellung:</p>
+  
+  <h3>Bestelldaten:</h3>
+  <table>
+  <tr>
+    <th>Angaben</th>
+    <th>Früchtebox</th>
+    <th>Lieferung</th>
+    <th>Adresse</th>
+  </tr>
+  <tr>
+    <td>{$formData['name']} {$formData['lastName']}</td>
+    <td>{$fruchteboxData['size']} Kg</td>
+    <td>{$lieferungData['frequency']}</td>
+    <td>{$adresscheckData['street']} {$adresscheckData['housenumber']}</td>
+  </tr>
+  <tr>
+    <td>{$formData['company']}</td>
+    <td>{$fruchteboxData['price']} CHF</td>
+    <td>{$daysString}</td>
+    <td>{$adresscheckData['city']} {$adresscheckData['postcode']}</td>
+  </tr>
+  <tr>
+    <td>{$formData['number']}</td>
+    <td></td>
+    <td></td>
+    <td></td>
+  </tr>
+  <tr>
+    <td>{$formData['email']}</td>
+    <td></td>
+    <td></td>
+    <td></td>
+  </tr>
+
+</table>
+
+
+  
+  <p>Bitte beachten Sie die neue Bestellung und bereiten Sie sie für den Versand vor.</p>
+</body>
+</html>
+";
+
+$mail = new PHPMailer(true);
+
+try {
+    //Server settings
+    $mail->isSMTP();
+    $mail->Host = 'smtp.gmail.com';
+    $mail->SMTPAuth = true;
+    $mail->Username = '';  // Your SMTP username
+    
+    $mail->Password = '';  // Your SMTP password
+    // $mail->Password = '';  // Your SMTP password
+    // $mail->SMTPSecure = 'tls';
+    $mail->SMTPSecure = PHPMailer::ENCRYPTION_STARTTLS;
+    $mail->Port = 587;
+
+    // Charset
+    $mail->CharSet = 'UTF-8';
+    
+    // $mail->Headers  = 'MIME-Version: 1.0' . "\r\n";
+    // $mail->Headers= 'Content-type: text/html; charset=iso-8859-1' . "\r\n";
+    // $mail->Headers= "From: contact@mysite.com\r\n"; 
+
+    
+
+    //Recipients
+     // Send email to the user
+    //  $mail->setFrom('$userMail', '$title');
+    $mail->setFrom('$userMail', '$title');
+     $mail->addAddress($toUser);
+     $mail->isHTML(true);
+     $mail->Subject = $subjectUser;
+     $mail->Body = $messageUser;
+     $mail->send();
+ 
+     // Send email to the shop owner
+     $mail->clearAddresses();
+     $mail->addAddress($toOwner);
+     $mail->isHTML(true);
+     $mail->Subject = $subjectOwner;
+     $mail->Body = $messageOwner;
+     $mail->send();
+
+    
+
+
+    // $mail->setFrom($to);
+    // // $mail->addAddress('$userMail', 'Your Name'); 
+    // $mail->addAddress($to); 
+
+    // // Content
+    // $mail->isHTML(true);
+    // $mail->Subject = $subject;
+    // $mail->Body = $message;
+
+    // $mail->send();
+    echo 'Message has been sent';
+} catch (Exception $e) {
+    // echo "Message could not be sent. Mailer Error: {$mail->ErrorInfo}";
+}
+?>
